@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotify Downloader</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0f0a;
+    --surface: #111711;
+    --card: #161e16;
+    --border: #1e2b1e;
+    --green: #1db954;
+    --green2: #3dda74;
+    --text: #e8ede8;
+    --muted: #6b7f6b;
+    --error: #e07070;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% -10%, rgba(29,185,84,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 10% 90%, rgba(29,185,84,0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Animated ring */
+  .hero-ring {
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    border: 1px solid rgba(29,185,84,0.1);
+    animation: pulse-ring 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .hero-ring::after {
+    content: '';
+    position: absolute;
+    inset: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(29,185,84,0.06);
+    animation: pulse-ring 4s ease-in-out infinite reverse;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.05); }
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 580px;
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 48px;
+  }
+
+  .brand-icon {
+    width: 36px; height: 36px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .brand-icon svg { width: 18px; height: 18px; fill: #000; }
+
+  .brand-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 8vw, 56px);
+    font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--green); }
+
+  .desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 44px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* API Key Section */
+  .api-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .api-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .api-label span {
+    background: rgba(29,185,84,0.15);
+    color: var(--green);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+  }
+
+  .api-input-row {
+    display: flex; gap: 10px;
+  }
+
+  .api-input-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-weight: 300;
+  }
+
+  .api-input-row input:focus { border-color: var(--green); }
+  .api-input-row input::placeholder { color: #2a3a2a; }
+
+  .save-key-btn {
+    background: rgba(29,185,84,0.15);
+    color: var(--green);
+    border: 1px solid rgba(29,185,84,0.3);
+    padding: 10px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .save-key-btn:hover {
+    background: rgba(29,185,84,0.25);
+    border-color: var(--green);
+  }
+
+  /* Input Card */
+  .input-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .input-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.4;
+  }
+
+  .input-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .url-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.25s;
+  }
+
+  .url-input:focus { border-color: var(--green); }
+  .url-input::placeholder { color: #2a3a2a; }
+
+  .fetch-btn {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 3px;
+    padding: 14px 24px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .fetch-btn:hover { background: var(--green2); }
+  .fetch-btn:active { transform: scale(0.98); }
+  .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Track result */
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 28px;
+    display: none;
+    animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  .result-card.visible { display: block; }
+
+  .track-header {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .track-art {
+    width: 80px; height: 80px;
+    border-radius: 2px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .track-art-placeholder {
+    width: 80px; height: 80px;
+    border-radius: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+
+  .track-info h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .track-info .artist {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .track-info .duration {
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+
+  .dl-btn {
+    width: 100%;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 3px;
+    padding: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s;
+  }
+
+  .dl-btn:hover { background: var(--green2); }
+  .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .dl-btn svg { width: 16px; height: 16px; }
+
+  /* Loading bar */
+  .progress-wrap {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin-top: 16px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .progress-wrap.visible { display: block; }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--green);
+    border-radius: 1px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  /* Status */
+  .status {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    text-align: center;
+    letter-spacing: 0.05em;
+    min-height: 18px;
+  }
+
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--error); }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .info-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: rgba(29,185,84,0.04);
+    border: 1px solid rgba(29,185,84,0.1);
+    border-radius: 3px;
+    line-height: 1.6;
+  }
+
+  .info-note a { color: var(--green); text-decoration: none; }
+  .info-note a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="hero-ring"></div>
+
+<div class="wrapper">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+    </div>
+    <div class="brand-text">Spotify Downloader</div>
+  </div>
+
+  <h1>Download<br><span>any track.</span></h1>
+  <p class="desc">Paste a Spotify song URL below and download the audio track directly to your device. Powered by RapidAPI.</p>
+
+  <!-- API Key Input -->
+  <div class="api-section">
+    <div class="api-label">RapidAPI Key <span>Required</span></div>
+    <div class="api-input-row">
+      <input type="password" id="apiKeyInput" placeholder="Enter your RapidAPI key here…">
+      <button class="save-key-btn" onclick="saveKey()">Save</button>
+    </div>
+  </div>
+
+  <!-- URL Input -->
+  <div class="input-card">
+    <div class="input-label">Spotify Track URL</div>
+    <div class="url-row">
+      <input
+        class="url-input"
+        id="urlInput"
+        type="url"
+        placeholder="https://open.spotify.com/track/…"
+      >
+      <button class="fetch-btn" id="fetchBtn" onclick="fetchTrack()">Fetch</button>
+    </div>
+    <div class="status" id="fetchStatus"></div>
+  </div>
+
+  <!-- Result Card -->
+  <div class="result-card" id="resultCard">
+    <div class="track-header">
+      <img class="track-art" id="trackArt" src="" alt="Album art" onerror="this.style.display='none'">
+      <div class="track-info">
+        <h2 id="trackName">—</h2>
+        <div class="artist" id="trackArtist">—</div>
+        <div class="duration" id="trackDuration">—</div>
+      </div>
+    </div>
+
+    <button class="dl-btn" id="dlBtn" onclick="downloadTrack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v12M8 11l4 4 4-4M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
+      </svg>
+      Download MP3
+    </button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="status" id="dlStatus"></div>
+  </div>
+
+  <div class="info-note">
+    ⚡ Uses the <strong>Spotify Downloader API</strong> on RapidAPI. Get a free key at
+    <a href="https://rapidapi.com/search/spotify" target="_blank">rapidapi.com</a>.
+    Search for <em>"Spotify Downloader"</em> and subscribe to a plan.
+  </div>
+</div>
+
+<script>
+  let apiKey = '';
+  let downloadUrl = '';
+
+  function saveKey() {
+    const val = document.getElementById('apiKeyInput').value.trim();
+    if (!val) {
+      alert('Please enter your RapidAPI key.');
+      return;
+    }
+    apiKey = val;
+    setStatus('fetchStatus', '✓ API key saved.', 'ok');
+    setTimeout(() => setStatus('fetchStatus', ''), 2500);
+  }
+
+  function setStatus(id, msg, cls = '') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function isValidSpotifyURL(url) {
+    return /^https:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]+/.test(url);
+  }
+
+  async function fetchTrack() {
+    const url   = document.getElementById('urlInput').value.trim();
+    const btn   = document.getElementById('fetchBtn');
+    const card  = document.getElementById('resultCard');
+
+    if (!apiKey) {
+      alert('⚠️ Please enter and save your RapidAPI key first.');
+      return;
+    }
+
+    if (!url) {
+      alert('⚠️ Please paste a Spotify track URL.');
+      return;
+    }
+
+    if (!isValidSpotifyURL(url)) {
+      alert('⚠️ Invalid Spotify URL.\nFormat: https://open.spotify.com/track/TRACK_ID');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Fetching…';
+    setStatus('fetchStatus', 'Connecting to RapidAPI…');
+    card.classList.remove('visible');
+
+    try {
+      // --- RapidAPI: Spotify Downloader ---
+      // Endpoint: https://spotify-downloader9.p.rapidapi.com/downloadSong
+      const apiRes = await fetch(
+        `https://spotify-downloader9.p.rapidapi.com/downloadSong?songId=${encodeURIComponent(url)}`,
+        {
+          method: 'GET',
+          headers: {
+            'x-rapidapi-key': apiKey,
+            'x-rapidapi-host': 'spotify-downloader9.p.rapidapi.com'
+          }
+        }
+      );
+
+      if (!apiRes.ok) {
+        const errText = await apiRes.text();
+        throw new Error(`API error ${apiRes.status}: ${errText}`);
+      }
+
+      const data = await apiRes.json();
+
+      // The Spotify Downloader API returns:
+      // data.success, data.data.title, data.data.artist, data.data.cover, data.data.downloadLink, data.data.duration
+      if (!data.success) {
+        throw new Error(data.message || 'The API returned an error. Check your key and URL.');
+      }
+
+      const track = data.data;
+      downloadUrl = track.downloadLink;
+
+      // Populate card
+      const artEl = document.getElementById('trackArt');
+      artEl.src = track.cover || '';
+      artEl.style.display = track.cover ? 'block' : 'none';
+
+      document.getElementById('trackName').textContent    = track.title   || 'Unknown Title';
+      document.getElementById('trackArtist').textContent  = track.artist  || 'Unknown Artist';
+      document.getElementById('trackDuration').textContent= track.duration ? formatDuration(track.duration) : '';
+
+      card.classList.add('visible');
+      setStatus('fetchStatus', '✓ Track found!', 'ok');
+
+    } catch (err) {
+      console.error(err);
+      alert('❌ Failed to fetch track.\n\n' + err.message);
+      setStatus('fetchStatus', 'Fetch failed — check key & URL.', 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Fetch';
+    }
+  }
+
+  async function downloadTrack() {
+    if (!downloadUrl) {
+      alert('No download URL available. Please fetch the track first.');
+      return;
+    }
+
+    const dlBtn = document.getElementById('dlBtn');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar  = document.getElementById('progressBar');
+
+    dlBtn.disabled = true;
+    dlBtn.innerHTML = '<span class="spinner" style="border-top-color:#000"></span> Downloading…';
+    progressWrap.classList.add('visible');
+    progressBar.style.width = '0%';
+    setStatus('dlStatus', 'Starting download…');
+
+    try {
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : null;
+      const reader = response.body.getReader();
+      const chunks = [];
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (total) {
+          const pct = Math.min(Math.round((received / total) * 100), 99);
+          progressBar.style.width = pct + '%';
+          setStatus('dlStatus', `Downloading… ${pct}%`);
+        } else {
+          // No content-length: just animate
+          const pseudo = Math.min((received / 2000000) * 90, 90);
+          progressBar.style.width = pseudo + '%';
+        }
+      }
+
+      progressBar.style.width = '100%';
+      setStatus('dlStatus', '✓ Download complete!', 'ok');
+
+      // Build blob and trigger download
+      const blob = new Blob(chunks, { type: 'audio/mpeg' });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const trackName = document.getElementById('trackName').textContent;
+      a.href = blobUrl;
+      a.download = (trackName || 'spotify-track') + '.mp3';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+
+      alert('✅ Download started!\nFile: ' + a.download);
+
+    } catch (err) {
+      console.error(err);
+      alert('❌ Download failed.\n\n' + err.message);
+      setStatus('dlStatus', 'Download failed.', 'err');
+    } finally {
+      dlBtn.disabled = false;
+      dlBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg> Download MP3`;
+      setTimeout(() => progressWrap.classList.remove('visible'), 2000);
+    }
+  }
+
+  function formatDuration(secs) {
+    const s = parseInt(secs);
+    if (isNaN(s)) return secs; // already formatted
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2,'0')}`;
+  }
+
+  // Allow Enter key to trigger fetch
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') fetchTrack();
+  });
+</script>
+</body>
+</html>
