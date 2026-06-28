@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QSkill – Sign In / Sign Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f0f17;
+  --card:#17172a;
+  --border:#2a2a45;
+  --blue:#5b6ef5;
+  --blue-light:#7c8bf7;
+  --text:#e8e8f0;
+  --muted:#8888aa;
+  --error:#f56565;
+  --success:#48bb78;
+  --warn:#ed8936;
+}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+
+/* Blobs */
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:float 8s ease-in-out infinite;pointer-events:none}
+.blob-1{width:400px;height:400px;background:#5b6ef5;top:-100px;left:-100px;animation-delay:0s}
+.blob-2{width:300px;height:300px;background:#a855f7;bottom:-80px;right:-80px;animation-delay:3s}
+.blob-3{width:200px;height:200px;background:#06b6d4;top:40%;right:10%;animation-delay:1.5s}
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+
+/* ── CARD SWITCHER ── */
+.card-wrap{position:relative;z-index:2;width:100%;max-width:460px;perspective:1000px}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:44px 44px 40px;
+  box-shadow:0 32px 80px rgba(0,0,0,.5);
+  display:none;
+  animation:slideIn .32s cubic-bezier(.22,1,.36,1);
+}
+.card.active{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* Logo */
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
+.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#5b6ef5,#a855f7);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text{font-size:20px;font-weight:800;color:var(--text)}
+.card-title{font-size:24px;font-weight:800;color:var(--text);text-align:center;margin-bottom:5px}
+.card-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:28px;line-height:1.5}
+
+/* Tab switcher (Login / Sign Up) */
+.tab-row{display:flex;background:#0f0f1e;border-radius:12px;padding:4px;margin-bottom:28px;gap:4px}
+.tab-btn{
+  flex:1;padding:10px;border:none;border-radius:9px;cursor:pointer;
+  font-size:14px;font-weight:600;font-family:'Inter',sans-serif;
+  background:transparent;color:var(--muted);transition:all .22s;
+}
+.tab-btn.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* Social */
+.social-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.btn-social{
+  padding:11px;background:#0f0f1e;border:1.5px solid var(--border);border-radius:10px;
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--text);font-family:'Inter',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;
+}
+.btn-social:hover{border-color:var(--blue);background:#17172a}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.divider span{font-size:12px;color:var(--muted)}
+
+/* Fields */
+.field{margin-bottom:18px}
+label{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.3px}
+.input-wrap{position:relative}
+input[type=text],input[type=email],input[type=password]{
+  width:100%;padding:13px 16px 13px 44px;
+  background:#0f0f1e;border:1.5px solid var(--border);border-radius:10px;
+  font-size:15px;font-family:'Inter',sans-serif;color:var(--text);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(91,110,245,.15)}
+input.err-inp{border-color:var(--error)!important;box-shadow:0 0 0 3px rgba(245,101,101,.1)!important}
+input.ok-inp{border-color:var(--success)!important}
+.input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;user-select:none;opacity:.6;transition:opacity .2s;background:none;border:none;color:var(--muted)}
+.eye-btn:hover{opacity:1}
+.field-msg{font-size:12px;margin-top:6px;min-height:16px}
+.field-msg.err{color:var(--error)}
+.field-msg.ok{color:var(--success)}
+
+/* two-col row */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Password strength */
+.strength-bar{display:flex;gap:4px;margin-top:8px}
+.strength-seg{height:4px;flex:1;border-radius:2px;background:#2a2a45;transition:background .3s}
+
+/* Confirm match indicator */
+.match-row{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px;min-height:16px}
+
+/* Remember / forgot */
+.row-check{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+.remember input{width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+.forgot{font-size:13px;color:var(--blue-light);text-decoration:none;font-weight:500}
+.forgot:hover{text-decoration:underline}
+
+/* Terms checkbox */
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:22px;font-size:13px;color:var(--muted)}
+.terms-row input{width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;margin-top:1px}
+.terms-row a{color:var(--blue-light);text-decoration:none}
+.terms-row a:hover{text-decoration:underline}
+
+/* Submit button */
+.btn-submit{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--blue),#7c5af5);
+  color:#fff;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
+  border:none;border-radius:10px;cursor:pointer;transition:all .25s;
+  position:relative;overflow:hidden;
+}
+.btn-submit:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(91,110,245,.45)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-submit.loading::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.12);animation:shimmer 1s ease infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* switch link */
+.switch-row{text-align:center;font-size:14px;color:var(--muted);margin-top:20px}
+.switch-row a{color:var(--blue-light);font-weight:600;text-decoration:none;cursor:pointer}
+.switch-row a:hover{text-decoration:underline}
+
+/* ── OTP SCREEN ── */
+.otp-icon{font-size:48px;text-align:center;margin-bottom:16px}
+.otp-email-label{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.otp-email-label strong{color:var(--blue-light)}
+.otp-boxes{display:flex;gap:10px;justify-content:center;margin-bottom:8px}
+.otp-box{
+  width:52px;height:60px;
+  background:#0f0f1e;border:1.5px solid var(--border);border-radius:12px;
+  font-size:24px;font-weight:700;color:var(--text);font-family:'Inter',sans-serif;
+  text-align:center;outline:none;transition:border-color .2s,box-shadow .2s;
+  caret-color:var(--blue);
+}
+.otp-box:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(91,110,245,.18)}
+.otp-box.filled{border-color:var(--blue-light)}
+.otp-box.err-otp{border-color:var(--error);box-shadow:0 0 0 3px rgba(245,101,101,.12);animation:shake .35s ease}
+.otp-box.ok-otp{border-color:var(--success);box-shadow:0 0 0 3px rgba(72,187,120,.12)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.otp-hint{font-size:12px;color:var(--muted);text-align:center;min-height:18px;margin-bottom:20px}
+.otp-hint.err{color:var(--error)}
+.otp-hint.ok{color:var(--success)}
+.resend-row{text-align:center;font-size:13px;color:var(--muted);margin-top:14px}
+.resend-row a{color:var(--blue-light);font-weight:600;cursor:pointer}
+.resend-row a:hover{text-decoration:underline}
+#resend-timer{font-weight:600;color:var(--warn)}
+.otp-back{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:14px;background:none;border:none;font-family:'Inter',sans-serif;width:100%}
+.otp-back:hover{color:var(--text)}
+
+/* Progress dots */
+.progress-dots{display:flex;gap:8px;justify-content:center;margin-bottom:22px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s}
+.dot.active{background:var(--blue);width:24px;border-radius:4px}
+.dot.done{background:var(--success)}
+
+/* Toast */
+.toast{
+  position:fixed;top:24px;right:24px;z-index:9999;
+  background:#17172a;border:1px solid var(--border);border-radius:12px;
+  padding:16px 22px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+  transform:translateX(120%);transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  max-width:320px;
+}
+.toast.show{transform:translateX(0)}
+.toast-icon{font-size:20px}
+.toast-text{font-size:14px;font-weight:600;color:var(--text)}
+.toast-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.toast.t-success{border-color:var(--success)}
+.toast.t-error{border-color:var(--error)}
+.toast.t-info{border-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="t-ico">✅</div>
+  <div><div class="toast-text" id="t-text"></div><div class="toast-sub" id="t-sub"></div></div>
+</div>
+
+<div class="card-wrap">
+
+  <!-- ══════════════════════════════
+       SCREEN 1 — LOGIN / SIGN UP
+  ══════════════════════════════ -->
+  <div class="card active" id="screen-auth">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">QSkill</div>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <!-- ── LOGIN PANEL ── -->
+    <div id="panel-login">
+      <div class="social-btns">
+        <button class="btn-social" onclick="toast('info','Google Login','OAuth integration needed','⚙️')"><span>🔵</span> Google</button>
+        <button class="btn-social" onclick="toast('info','GitHub Login','OAuth integration needed','⚙️')"><span>⚫</span> GitHub</button>
+      </div>
+      <div class="divider"><span>or continue with email</span></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="li-email">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">📧</span>
+            <input type="email" id="li-email" placeholder="you@example.com" autocomplete="email" oninput="liValidEmail()"/>
+          </div>
+          <div class="field-msg" id="li-email-msg"></div>
+        </div>
+
+        <div class="field">
+          <label for="li-pwd">
+            Password
+            <a class="forgot" href="#" onclick="forgotPwd(event)">Forgot password?</a>
+          </label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="li-pwd" placeholder="Enter your password" autocomplete="current-password" oninput="liValidPwd()"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('li-pwd',this)">👁️</button>
+          </div>
+          <div class="strength-bar"><div class="strength-seg" id="li-s1"></div><div class="strength-seg" id="li-s2"></div><div class="strength-seg" id="li-s3"></div><div class="strength-seg" id="li-s4"></div></div>
+          <div class="field-msg" id="li-pwd-msg"></div>
+        </div>
+
+        <div class="row-check">
+          <label class="remember"><input type="checkbox" id="li-remember"/> Remember me</label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="li-btn">Sign In →</button>
+      </form>
+      <div class="switch-row">Don't have an account? <a onclick="switchTab('signup')">Create one free</a></div>
+    </div>
+
+    <!-- ── SIGN UP PANEL ── -->
+    <div id="panel-signup" style="display:none">
+      <div class="social-btns">
+        <button class="btn-social" onclick="toast('info','Google Sign‑Up','OAuth integration needed','⚙️')"><span>🔵</span> Google</button>
+        <button class="btn-social" onclick="toast('info','GitHub Sign‑Up','OAuth integration needed','⚙️')"><span>⚫</span> GitHub</button>
+      </div>
+      <div class="divider"><span>or sign up with email</span></div>
+
+      <form id="signupForm" novalidate>
+        <div class="field-row">
+          <div class="field">
+            <label for="su-fname">First Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" id="su-fname" placeholder="Rahul" oninput="suValidName('su-fname','su-fname-msg')"/>
+            </div>
+            <div class="field-msg" id="su-fname-msg"></div>
+          </div>
+          <div class="field">
+            <label for="su-lname">Last Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" id="su-lname" placeholder="Sharma" oninput="suValidName('su-lname','su-lname-msg')"/>
+            </div>
+            <div class="field-msg" id="su-lname-msg"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="su-email">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">📧</span>
+            <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email" oninput="suValidEmail()"/>
+          </div>
+          <div class="field-msg" id="su-email-msg"></div>
+        </div>
+
+        <div class="field">
+          <label for="su-phone">Phone Number <span style="font-weight:400;font-size:11px;color:var(--muted)">(optional)</span></label>
+          <div class="input-wrap">
+            <span class="input-icon">📱</span>
+            <input type="text" id="su-phone" placeholder="+91 98765 43210" oninput="suValidPhone()"/>
+          </div>
+          <div class="field-msg" id="su-phone-msg"></div>
+        </div>
+
+        <div class="field">
+          <label for="su-pwd">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="su-pwd" placeholder="Min. 8 characters" autocomplete="new-password" oninput="suValidPwd()"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('su-pwd',this)">👁️</button>
+          </div>
+          <div class="strength-bar"><div class="strength-seg" id="su-s1"></div><div class="strength-seg" id="su-s2"></div><div class="strength-seg" id="su-s3"></div><div class="strength-seg" id="su-s4"></div></div>
+          <div class="field-msg" id="su-pwd-msg"></div>
+        </div>
+
+        <div class="field">
+          <label for="su-cpwd">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="su-cpwd" placeholder="Re-enter password" autocomplete="new-password" oninput="suValidConfirm()"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('su-cpwd',this)">👁️</button>
+          </div>
+          <div class="field-msg" id="su-cpwd-msg"></div>
+        </div>
+
+        <div class="terms-row">
+          <input type="checkbox" id="su-terms"/>
+          <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+        </div>
+
+        <button type="submit" class="btn-submit" id="su-btn" style="background:linear-gradient(135deg,#a855f7,#5b6ef5)">Create Account →</button>
+      </form>
+      <div class="switch-row">Already have an account? <a onclick="switchTab('login')">Sign in</a></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SCREEN 2 — OTP VERIFICATION
+  ══════════════════════════════ -->
+  <div class="card" id="screen-otp">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">QSkill</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-dots">
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+      <div class="dot"></div>
+    </div>
+
+    <div class="otp-icon">📨</div>
+    <h1 class="card-title">Check your inbox</h1>
+    <p class="card-sub">We sent a 6-digit code to<br/><strong id="otp-email-display" style="color:var(--blue-light)"></strong></p>
+    <div style="margin-bottom:20px"></div>
+
+    <div class="otp-boxes" id="otp-boxes">
+      <input class="otp-box" id="otp0" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code"/>
+      <input class="otp-box" id="otp1" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" id="otp2" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" id="otp3" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" id="otp4" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" id="otp5" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+    </div>
+    <div class="otp-hint" id="otp-hint">Enter the 6-digit code from your email</div>
+
+    <button class="btn-submit" id="otp-verify-btn" onclick="verifyOTP()" disabled style="background:linear-gradient(135deg,var(--blue),#7c5af5)">Verify & Continue →</button>
+
+    <div class="resend-row">
+      Didn't receive it?
+      <span id="resend-section">
+        Resend in <span id="resend-timer">0:30</span>
+      </span>
+    </div>
+
+    <button class="otp-back" onclick="goBack()">← Back</button>
+  </div>
+
+  <!-- ══════════════════════════════
+       SCREEN 3 — SUCCESS
+  ══════════════════════════════ -->
+  <div class="card" id="screen-success">
+    <div style="text-align:center;padding:12px 0">
+      <div class="progress-dots" style="justify-content:center">
+        <div class="dot done"></div>
+        <div class="dot done"></div>
+        <div class="dot done active"></div>
+      </div>
+      <div style="font-size:64px;margin:12px 0">🎉</div>
+      <h1 class="card-title" style="margin-bottom:10px">You're in!</h1>
+      <p class="card-sub" style="margin-bottom:28px">Your account is verified and ready. Welcome to QSkill!</p>
+      <div id="success-name" style="font-size:18px;font-weight:700;color:var(--blue-light);margin-bottom:24px"></div>
+      <button class="btn-submit" onclick="resetAll()" style="background:linear-gradient(135deg,var(--success),#38a169)">Go to Dashboard →</button>
+      <div class="switch-row" style="margin-top:16px"><a onclick="resetAll()">Back to Home</a></div>
+    </div>
+  </div>
+
+</div><!-- end card-wrap -->
+
+<script>
+// ── Utilities ──
+const $ = id => document.getElementById(id);
+let toastTimer;
+
+function toast(type, title, sub, icon) {
+  const t = $('toast');
+  $('t-ico').textContent = icon || (type==='success'?'✅':type==='error'?'❌':'ℹ️');
+  $('t-text').textContent = title;
+  $('t-sub').textContent = sub || '';
+  t.className = 'toast show t-' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+function setF(inpId, msgId, type, msg) {
+  const inp = $(inpId), el = $(msgId);
+  if (!inp || !el) return;
+  inp.classList.remove('err-inp','ok-inp');
+  if (type==='err') { inp.classList.add('err-inp'); el.className='field-msg err'; el.textContent='⚠ '+msg; }
+  else if (type==='ok') { inp.classList.add('ok-inp'); el.className='field-msg ok'; el.textContent='✓ '+msg; }
+  else { el.className='field-msg'; el.textContent=''; }
+}
+
+function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+function toggleEye(id, btn) {
+  const inp = $(id);
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  btn.textContent = inp.type==='password' ? '👁️' : '🙈';
+}
+
+function pwdStrength(val, prefix) {
+  const segs = [prefix+'s1',prefix+'s2',prefix+'s3',prefix+'s4'];
+  const colors = ['#f56565','#ed8936','#ecc94b','#48bb78'];
+  if (!val) { segs.forEach(s=>{ if($(s)) $(s).style.background=''; }); return 0; }
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  segs.forEach((s,i) => { if($(s)) $(s).style.background = i<score ? colors[score-1] : '#2a2a45'; });
+  return score;
+}
+
+// ── Tab switch ──
+function switchTab(tab) {
+  $('tab-login').classList.toggle('active', tab==='login');
+  $('tab-signup').classList.toggle('active', tab==='signup');
+  $('panel-login').style.display = tab==='login' ? '' : 'none';
+  $('panel-signup').style.display = tab==='signup' ? '' : 'none';
+}
+
+// ── Screen switch ──
+function showScreen(id) {
+  ['screen-auth','screen-otp','screen-success'].forEach(s => {
+    $(s).classList.remove('active');
+  });
+  $(id).classList.add('active');
+}
+
+// ══════════════
+// LOGIN VALIDATORS
+// ══════════════
+function liValidEmail() {
+  const v = $('li-email').value.trim();
+  if (!v) { setF('li-email','li-email-msg','',''); return false; }
+  if (!isEmail(v)) { setF('li-email','li-email-msg','err','Enter a valid email address'); return false; }
+  setF('li-email','li-email-msg','ok','Looks good!'); return true;
+}
+function liValidPwd() {
+  const v = $('li-pwd').value;
+  const score = pwdStrength(v, 'li-');
+  if (!v) { setF('li-pwd','li-pwd-msg','',''); return false; }
+  if (v.length < 6) { setF('li-pwd','li-pwd-msg','err','At least 6 characters required'); return false; }
+  const labels = ['Weak','Fair','Good','Strong'];
+  setF('li-pwd','li-pwd-msg','ok', labels[score-1]||'Weak');
+  return true;
+}
+
+$('loginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const eOk = liValidEmail(), pOk = liValidPwd();
+  if (!eOk || !pOk) { toast('error','Check your inputs','Please fix the errors below','⚠️'); return; }
+
+  const btn = $('li-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Signing in…';
+
+  setTimeout(() => {
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'Sign In →';
+    const email = $('li-email').value.trim(), pass = $('li-pwd').value;
+    if (email==='test@qskill.com' && pass==='Password123!') {
+      $('success-name').textContent = '👋 Welcome back!';
+      showScreen('screen-success');
+    } else {
+      toast('error','Login failed','Invalid email or password. Hint: test@qskill.com / Password123!','❌');
+      setF('li-email','li-email-msg','err','Invalid credentials');
+      setF('li-pwd','li-pwd-msg','err','Invalid credentials');
+    }
+  }, 1400);
+});
+
+// ══════════════
+// SIGN UP VALIDATORS
+// ══════════════
+function suValidName(inpId, msgId) {
+  const v = $(inpId).value.trim();
+  if (!v) { setF(inpId, msgId, '', ''); return false; }
+  if (v.length < 2) { setF(inpId, msgId, 'err', 'Too short'); return false; }
+  if (!/^[a-zA-Z\s'-]+$/.test(v)) { setF(inpId, msgId, 'err', 'Letters only'); return false; }
+  setF(inpId, msgId, 'ok', 'Looks good!'); return true;
+}
+function suValidEmail() {
+  const v = $('su-email').value.trim();
+  if (!v) { setF('su-email','su-email-msg','',''); return false; }
+  if (!isEmail(v)) { setF('su-email','su-email-msg','err','Enter a valid email address'); return false; }
+  setF('su-email','su-email-msg','ok','Looks good!'); return true;
+}
+function suValidPhone() {
+  const v = $('su-phone').value.trim();
+  if (!v) { setF('su-phone','su-phone-msg','',''); return false; }
+  const digits = v.replace(/\D/g,'');
+  if (digits.length < 10) { setF('su-phone','su-phone-msg','err','Enter a valid phone number'); return false; }
+  setF('su-phone','su-phone-msg','ok','Valid!'); return true;
+}
+function suValidPwd() {
+  const v = $('su-pwd').value;
+  const score = pwdStrength(v, 'su-');
+  if (!v) { setF('su-pwd','su-pwd-msg','',''); return false; }
+  if (v.length < 8) { setF('su-pwd','su-pwd-msg','err','Minimum 8 characters'); return false; }
+  const labels = ['Weak — add uppercase/numbers','Fair','Good','Strong ✓'];
+  setF('su-pwd','su-pwd-msg', score>=2?'ok':'err', labels[score-1]||'Too weak');
+  if ($('su-cpwd').value) suValidConfirm();
+  return score >= 2;
+}
+function suValidConfirm() {
+  const pwd = $('su-pwd').value, cpwd = $('su-cpwd').value;
+  if (!cpwd) { setF('su-cpwd','su-cpwd-msg','',''); return false; }
+  if (pwd !== cpwd) { setF('su-cpwd','su-cpwd-msg','err','Passwords do not match'); return false; }
+  setF('su-cpwd','su-cpwd-msg','ok','Passwords match!'); return true;
+}
+
+let pendingSignupData = {};
+
+$('signupForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const fnOk  = suValidName('su-fname','su-fname-msg');
+  const lnOk  = suValidName('su-lname','su-lname-msg');
+  const emOk  = suValidEmail();
+  const pwOk  = suValidPwd();
+  const cpOk  = suValidConfirm();
+  const terms = $('su-terms').checked;
+
+  if (!fnOk || !lnOk || !emOk || !pwOk || !cpOk) {
+    toast('error','Almost there','Please fix the highlighted fields','⚠️'); return;
+  }
+  if (!terms) {
+    toast('error','Terms required','Please accept the Terms of Service to continue','📋'); return;
+  }
+
+  pendingSignupData = {
+    firstName: $('su-fname').value.trim(),
+    lastName:  $('su-lname').value.trim(),
+    email:     $('su-email').value.trim(),
+  };
+
+  const btn = $('su-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Sending code…';
+
+  setTimeout(() => {
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'Create Account →';
+    launchOTP(pendingSignupData.email);
+  }, 1200);
+});
+
+// ══════════════
+// OTP SCREEN
+// ══════════════
+let otpCode = '';
+let resendInterval;
+
+function launchOTP(email) {
+  // Generate demo OTP
+  otpCode = String(Math.floor(100000 + Math.random()*900000));
+  $('otp-email-display').textContent = email;
+
+  // Clear boxes
+  for (let i=0;i<6;i++) {
+    const b = $('otp'+i);
+    b.value = '';
+    b.className = 'otp-box';
+  }
+  $('otp-hint').className = 'otp-hint';
+  $('otp-hint').textContent = 'Enter the 6-digit code from your email';
+  $('otp-verify-btn').disabled = true;
+
+  showScreen('screen-otp');
+  startResendTimer();
+  setTimeout(() => $('otp0').focus(), 320);
+
+  // Show the demo OTP in a toast
+  toast('info', 'Demo OTP: ' + otpCode, 'Use this code — no real email is sent', '🔑');
+}
+
+// OTP box keyboard logic
+for (let i=0; i<6; i++) {
+  (function(idx){
+    const box = $('otp'+idx);
+    box.addEventListener('input', function() {
+      const v = this.value.replace(/[^0-9]/g,'');
+      this.value = v.slice(-1);
+      this.classList.toggle('filled', !!this.value);
+      if (v && idx < 5) $('otp'+(idx+1)).focus();
+      checkOTPFilled();
+    });
+    box.addEventListener('keydown', function(e) {
+      if (e.key==='Backspace' && !this.value && idx>0) {
+        $('otp'+(idx-1)).focus();
+        $('otp'+(idx-1)).value='';
+        $('otp'+(idx-1)).classList.remove('filled');
+        checkOTPFilled();
+      }
+      if (e.key==='ArrowLeft' && idx>0) $('otp'+(idx-1)).focus();
+      if (e.key==='ArrowRight' && idx<5) $('otp'+(idx+1)).focus();
+    });
+    box.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const txt = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      txt.split('').forEach((c,j) => {
+        if ($('otp'+j)) { $('otp'+j).value=c; $('otp'+j).classList.add('filled'); }
+      });
+      if ($('otp'+(txt.length-1))) $('otp'+(txt.length-1)).focus();
+      checkOTPFilled();
+    });
+  })(i);
+}
+
+function checkOTPFilled() {
+  const val = getOTPValue();
+  $('otp-verify-btn').disabled = val.length < 6;
+}
+
+function getOTPValue() {
+  let v='';
+  for(let i=0;i<6;i++) v += ($('otp'+i).value||'');
+  return v;
+}
+
+function verifyOTP() {
+  const entered = getOTPValue();
+  const btn = $('otp-verify-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Verifying…';
+
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.textContent = 'Verify & Continue →';
+    if (entered === otpCode) {
+      // Mark boxes green
+      for(let i=0;i<6;i++){ $('otp'+i).className='otp-box ok-otp'; }
+      $('otp-hint').className='otp-hint ok';
+      $('otp-hint').textContent='✓ Code verified!';
+      clearInterval(resendInterval);
+      setTimeout(() => {
+        $('success-name').textContent = '👋 Welcome, ' + pendingSignupData.firstName + ' ' + pendingSignupData.lastName + '!';
+        showScreen('screen-success');
+      }, 700);
+    } else {
+      for(let i=0;i<6;i++){ $('otp'+i).className='otp-box err-otp'; }
+      $('otp-hint').className='otp-hint err';
+      $('otp-hint').textContent='✗ Incorrect code. Try again.';
+      btn.disabled = false;
+      setTimeout(() => {
+        for(let i=0;i<6;i++){ $('otp'+i).className='otp-box'; $('otp'+i).value=''; $('otp'+i).classList.remove('filled'); }
+        $('otp0').focus();
+        checkOTPFilled();
+      }, 900);
+    }
+  }, 900);
+}
+
+// Resend timer
+function startResendTimer() {
+  clearInterval(resendInterval);
+  let secs = 30;
+  const timerEl = $('resend-timer');
+  const section = $('resend-section');
+  section.innerHTML = 'Resend in <span id="resend-timer">0:30</span>';
+
+  resendInterval = setInterval(() => {
+    secs--;
+    const t = $('resend-timer');
+    if (t) t.textContent = '0:' + String(secs).padStart(2,'0');
+    if (secs <= 0) {
+      clearInterval(resendInterval);
+      section.innerHTML = '<a onclick="resendOTP()">Resend code</a>';
+    }
+  }, 1000);
+}
+
+function resendOTP() {
+  otpCode = String(Math.floor(100000 + Math.random()*900000));
+  for(let i=0;i<6;i++){ $('otp'+i).value=''; $('otp'+i).className='otp-box'; }
+  $('otp-hint').className='otp-hint';
+  $('otp-hint').textContent='Enter the 6-digit code from your email';
+  $('otp-verify-btn').disabled=true;
+  startResendTimer();
+  $('otp0').focus();
+  toast('info','New code sent!','Demo OTP: '+otpCode,'📬');
+}
+
+function goBack() {
+  clearInterval(resendInterval);
+  showScreen('screen-auth');
+}
+
+function forgotPwd(e) {
+  e.preventDefault();
+  const email = $('li-email').value.trim();
+  if (!email || !isEmail(email)) {
+    toast('error','Email required','Enter your email address first, then click Forgot Password','📧');
+    $('li-email').focus(); return;
+  }
+  toast('success','Reset email sent','Check '+email+' for reset instructions','📬');
+}
+
+function resetAll() {
+  // Clear all forms
+  ['li-email','li-pwd','su-fname','su-lname','su-email','su-phone','su-pwd','su-cpwd'].forEach(id => {
+    if($(id)) { $(id).value=''; $(id).classList.remove('err-inp','ok-inp'); }
+  });
+  ['li-email-msg','li-pwd-msg','su-fname-msg','su-lname-msg','su-email-msg','su-phone-msg','su-pwd-msg','su-cpwd-msg'].forEach(id=>{
+    if($(id)) { $(id).textContent=''; $(id).className='field-msg'; }
+  });
+  if($('su-terms')) $('su-terms').checked=false;
+  ['li-s1','li-s2','li-s3','li-s4','su-s1','su-s2','su-s3','su-s4'].forEach(id=>{
+    if($(id)) $(id).style.background='';
+  });
+  switchTab('login');
+  showScreen('screen-auth');
+}
+</script>
+</body>
+</html>
